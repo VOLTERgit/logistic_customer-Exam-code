@@ -34,7 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = joblib.load(r"C:\Users\chava\OneDrive\Desktop\TOPS\Exam\API2.joblib")
+model = joblib.load(r"API2.joblib")
 
 @app.get("/")
 def request():
