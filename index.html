@@ -415,7 +415,7 @@
       const handleAgeSlider    = (val) => setAgeStr(String(val));
       const handleIncomeSlider = (val) => setIncomeStr(String(val));
 
-      const apiUrl = `http://127.0.0.1:8000/pred?age=${ageNum}&income=${incomeNum}`;
+      const apiUrl = `http://0.0.0.0:10000/pred?age=${ageNum}&income=${incomeNum}`;
 
       const handlePredict = useCallback(async () => {
         if (!ageNum || !incomeNum) {
