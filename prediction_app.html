@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Buy Predictor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --ink:   #0d0d0d;
+      --cream: #f5f0e8;
+      --rust:  #c94a2b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      border-bottom: 2px solid var(--ink);
+      padding: 28px 48px;
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+    }
+    header span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--rust);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1.5px solid var(--rust);
+      padding: 3px 9px;
+      border-radius: 2px;
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 80px);
+    }
+
+    /* ── LEFT PANEL ── */
+    .panel-left {
+      border-right: 2px solid var(--ink);
+      padding: 52px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-bottom: 18px;
+    }
+
+    /* input group */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .input-group label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .input-group input {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 400;
+      border: none;
+      border-bottom: 2px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      padding: 8px 0 10px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .input-group input::placeholder { color: #aaa; }
+    .input-group input:focus { border-bottom-color: var(--rust); }
+
+    /* slider */
+    .slider-wrap {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 3px;
+      background: var(--ink);
+      border-radius: 0;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--rust);
+      border-radius: 50%;
+      border: 2px solid var(--ink);
+      cursor: pointer;
+    }
+    .slider-minmax {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: #777;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* predict button */
+    .btn-predict {
+      margin-top: 8px;
+      background: var(--ink);
+      color: var(--cream);
+      border: 2px solid var(--ink);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 18px 0;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+    }
+    .btn-predict:hover {
+      background: var(--rust);
+      border-color: var(--rust);
+    }
+    .btn-predict:active { transform: translateY(1px); }
+    .btn-predict:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* api bar */
+    .api-bar {
+      display: flex;
+      align-items: stretch;
+      border: 2px solid var(--ink);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+    }
+    .api-method {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 10px 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+    .api-url {
+      padding: 10px 14px;
+      flex: 1;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      color: #555;
+    }
+    .api-url strong { color: var(--ink); }
+
+    /* ── RIGHT PANEL ── */
+    .panel-right {
+      padding: 52px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 44px;
+    }
+
+    /* result box */
+    .result-box {
+      border: 2px solid var(--ink);
+      padding: 36px 32px;
+      text-align: center;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: background 0.3s;
+    }
+    .result-box.buy   { background: var(--ink); }
+    .result-box.nobuy { background: var(--cream); }
+    .result-box.idle  { background: var(--cream); }
+
+    .result-icon {
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+    .result-verdict {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+    }
+    .result-box.buy   .result-verdict { color: var(--cream); }
+    .result-box.nobuy .result-verdict { color: var(--rust); }
+    .result-box.idle  .result-verdict { color: #bbb; }
+
+    .result-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+    }
+    .result-box.buy   .result-sub { color: rgba(245,240,232,0.6); }
+    .result-box.nobuy .result-sub { color: #888; }
+    .result-box.idle  .result-sub { color: #ccc; }
+
+    /* data table */
+    .data-section {}
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+    }
+    .data-table thead th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: var(--cream);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+    }
+    .data-table tbody tr {
+      border-bottom: 1px solid #ddd;
+      transition: background 0.12s;
+    }
+    .data-table tbody tr:hover { background: #ede8e0; }
+    .data-table tbody td {
+      padding: 9px 14px;
+      color: var(--ink);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      border-radius: 2px;
+      letter-spacing: 0.06em;
+    }
+    .badge-1 { background: var(--ink); color: var(--cream); }
+    .badge-0 { border: 1.5px solid var(--rust); color: var(--rust); }
+
+    /* code block */
+    .code-block {
+      background: var(--ink);
+      color: #e8e4dc;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      padding: 22px 24px;
+      line-height: 1.75;
+      overflow-x: auto;
+      border: 2px solid var(--ink);
+    }
+    .code-block .kw  { color: var(--rust); }
+    .code-block .fn  { color: #e8b86d; }
+    .code-block .str { color: #8fc48f; }
+    .code-block .cm  { color: #666; font-style: italic; }
+
+    /* tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--ink);
+      gap: 0;
+    }
+    .tab {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #888;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s;
+    }
+    .tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--rust);
+      font-weight: 600;
+    }
+    .tab:hover:not(.active) { color: var(--ink); }
+
+    .tab-content { padding-top: 24px; }
+
+    /* spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid rgba(245,240,232,0.3);
+      border-top-color: var(--cream);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* error */
+    .error-msg {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--rust);
+      padding: 14px 18px;
+      border: 1.5px solid var(--rust);
+      margin-top: -16px;
+    }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .panel-left { border-right: none; border-bottom: 2px solid var(--ink); }
+      header { padding: 20px 24px; }
+      .panel-left, .panel-right { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useCallback } = React;
+
+    const SAMPLE_DATA = [
+      { age: 48.38, income: 105445, result: 1 },
+      { age: 18.68, income: 58483,  result: 0 },
+      { age: 42.97, income: 51678,  result: 1 },
+      { age: 24.68, income: 37108,  result: 0 },
+      { age: 56.86, income: 118834, result: 1 },
+      { age: 33.01, income: 40763,  result: 0 },
+      { age: 31.52, income: 74776,  result: 1 },
+      { age: 45.79, income: 29332,  result: 0 },
+    ];
+
+    function CodeBlock() {
+      return (
+        <div className="code-block">
+          <span className="cm"># api1.py — add these lines to fix CORS</span>{"\n"}
+          <span className="kw">from</span> fastapi <span className="kw">import</span> FastAPI{"\n"}
+          <span className="kw">from</span> fastapi.middleware.cors <span className="kw">import</span> CORSMiddleware{"\n"}
+          <span className="kw">import</span> joblib, numpy <span className="kw">as</span> np{"\n\n"}
+          app = <span className="fn">FastAPI</span>(){"\n\n"}
+          <span className="cm"># ↓ add this block ↓</span>{"\n"}
+          app.<span className="fn">add_middleware</span>(CORSMiddleware,{"\n"}
+          {"  "}allow_origins=[<span className="str">"*"</span>],{"\n"}
+          {"  "}allow_methods=[<span className="str">"*"</span>],{"\n"}
+          {"  "}allow_headers=[<span className="str">"*"</span>],{"\n"}
+          ){"\n\n"}
+          model = joblib.<span className="fn">load</span>(<span className="str">"API2.joblib"</span>){"\n\n"}
+          <span className="kw">@</span><span className="fn">app.get</span>(<span className="str">"/pred"</span>){"\n"}
+          <span className="kw">def</span> <span className="fn">predict</span>(age: float, income: float):{"\n"}
+          {"  "}data = np.<span className="fn">array</span>([[age, income]]){"\n"}
+          {"  "}pred = model.<span className="fn">predict</span>(data){"\n"}
+          {"  "}<span className="kw">return</span> {"{"}
+          <span className="str">"Predict"</span>: <span className="fn">float</span>(pred[0]){"}"}{"\n"}
+        </div>
+      );
+    }
+
+    function App() {
+      // Store as STRING so user can freely edit (no leading zero bug)
+      const [ageStr,    setAgeStr]    = useState("35");
+      const [incomeStr, setIncomeStr] = useState("75000");
+      const [result, setResult]   = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError]     = useState("");
+      const [tab, setTab]         = useState("data");
+
+      // Parsed numbers used for API call & slider sync
+      const ageNum    = parseFloat(ageStr)  || 0;
+      const incomeNum = parseFloat(incomeStr) || 0;
+
+      // Handle text input change — allow empty string while typing
+      const handleAgeChange = (val) => {
+        // allow digits and one dot only
+        if (/^\d*\.?\d*$/.test(val)) setAgeStr(val);
+      };
+      const handleIncomeChange = (val) => {
+        if (/^\d*$/.test(val)) setIncomeStr(val);
+      };
+
+      // Slider moves → update string directly (no leading zero issue)
+      const handleAgeSlider    = (val) => setAgeStr(String(val));
+      const handleIncomeSlider = (val) => setIncomeStr(String(val));
+
+      const apiUrl = `http://127.0.0.1:8000/pred?age=${ageNum}&income=${incomeNum}`;
+
+      const handlePredict = useCallback(async () => {
+        if (!ageNum || !incomeNum) {
+          setError("Please enter valid Age and Income values.");
+          return;
+        }
+        setLoading(true);
+        setError("");
+        setResult(null);
+        try {
+          const res = await fetch(apiUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          setResult(json.Predict);
+        } catch (e) {
+          setError(`CORS error or server not running.\n\nFix: Add CORSMiddleware to api1.py (see the "API Code" tab), then restart uvicorn.\n\n(${e.message})`);
+        } finally {
+          setLoading(false);
+        }
+      }, [apiUrl, ageNum, incomeNum]);
+
+      const resultState = result === null ? "idle" : result === 1 ? "buy" : "nobuy";
+
+      return (
+        <>
+          <header>
+            <h1>Customer Buy Predictor</h1>
+            <span>Logistic Regression · FastAPI</span>
+          </header>
+
+          <main>
+            {/* ── LEFT ── */}
+            <div className="panel-left">
+
+              <div>
+                <p className="section-label">01 — Input Parameters</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:32 }}>
+
+                  <div className="input-group">
+                    <label>Customer Age</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={ageStr}
+                      onChange={e => handleAgeChange(e.target.value)}
+                      placeholder="e.g. 35"
+                    />
+                    <div className="slider-wrap">
+                      <div className="slider-row">
+                        <input type="range" min={18} max={80}
+                          value={Math.min(Math.max(ageNum||18, 18), 80)}
+                          onChange={e => handleAgeSlider(e.target.value)}
+                        />
+                      </div>
+                      <div className="slider-minmax"><span>18</span><span>80</span></div>
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Annual Income ($)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={incomeStr}
+                      onChange={e => handleIncomeChange(e.target.value)}
+                      placeholder="e.g. 75000"
+                    />
+                    <div className="slider-wrap">
+                      <div className="slider-row">
+                        <input type="range" min={10000} max={150000} step={500}
+                          value={Math.min(Math.max(incomeNum||10000, 10000), 150000)}
+                          onChange={e => handleIncomeSlider(e.target.value)}
+                        />
+                      </div>
+                      <div className="slider-minmax"><span>$10k</span><span>$150k</span></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <div>
+                <p className="section-label">02 — API Endpoint</p>
+                <div className="api-bar">
+                  <div className="api-method">GET</div>
+                  <div className="api-url">
+                    <strong>/pred</strong>&nbsp;?age={ageStr}&amp;income={incomeStr}
+                  </div>
+                </div>
+              </div>
+
+              <button className="btn-predict" onClick={handlePredict} disabled={loading}>
+                {loading ? "Running Model..." : "→ Run Prediction"}
+              </button>
+
+              {error && <div className="error-msg" style={{whiteSpace:"pre-line"}}>{error}</div>}
+
+            </div>
+
+            {/* ── RIGHT ── */}
+            <div className="panel-right">
+
+              <div>
+                <p className="section-label">03 — Prediction Result</p>
+                <div className={`result-box ${resultState}`}>
+                  {loading ? (
+                    <div className="spinner" />
+                  ) : result === null ? (
+                    <>
+                      <div className="result-icon">◌</div>
+                      <div className="result-verdict">Awaiting Input</div>
+                      <div className="result-sub">Set parameters and hit predict</div>
+                    </>
+                  ) : result === 1 ? (
+                    <>
+                      <div className="result-icon">✓</div>
+                      <div className="result-verdict">Will Buy</div>
+                      <div className="result-sub">Model output: 1 · Age {ageStr} · ${incomeNum.toLocaleString()}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="result-icon">✕</div>
+                      <div className="result-verdict">Won't Buy</div>
+                      <div className="result-sub">Model output: 0 · Age {ageStr} · ${incomeNum.toLocaleString()}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="tabs">
+                  <button className={`tab ${tab==="data"?"active":""}`} onClick={()=>setTab("data")}>Sample Data</button>
+                  <button className={`tab ${tab==="code"?"active":""}`} onClick={()=>setTab("code")}>API Code</button>
+                </div>
+                <div className="tab-content">
+                  {tab === "data" ? (
+                    <div className="data-section">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Age</th>
+                            <th>Income</th>
+                            <th>Buy?</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {SAMPLE_DATA.map((row, i) => (
+                            <tr key={i}
+                              style={{ cursor:"pointer" }}
+                              onClick={() => { setAgeStr(String(row.age)); setIncomeStr(String(row.income)); setResult(null); }}
+                            >
+                              <td>{row.age}</td>
+                              <td>${row.income.toLocaleString()}</td>
+                              <td>
+                                <span className={`badge badge-${row.result}`}>
+                                  {row.result === 1 ? "Yes" : "No"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <p style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.65rem", color:"#999", marginTop:12 }}>
+                        Click any row to load its values →
+                      </p>
+                    </div>
+                  ) : (
+                    <CodeBlock />
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </main>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
